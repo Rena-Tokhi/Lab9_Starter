@@ -7,6 +7,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Lab 9</title>
 
+  <!--
+    ============================================================
+    STEP 5 (TrackJS) — paste your snippet here, before </head>.
+    Replace YOUR_TOKEN with the token from your TrackJS trial.
+    Keep it commented until you have a token so the page doesn't
+    error on load.
+    ============================================================
+  -->
+  
+  <script>
+    window._trackJs = { token: '1eeac379567046a3bab06bd7e9cb9bc7', application: 'lab9' };
+  </script>
+  <script src="https://cdn.trackjs.com/releases/current/tracker.js" crossorigin="anonymous"></script>
+ 
+
   <style>
     button {
       margin: 3px;
@@ -88,6 +103,52 @@
   </main>
 
   <script>
+    /* ============================================================
+       STEP 5 — GLOBAL ERROR HANDLERS (set up first so they catch
+       anything that escapes a try/catch below).
+       ============================================================ */
+
+    // Classic approach from the AjaxRef demo: window.onerror.
+    window.onerror = function (message, source, lineno, colno, error) {
+      console.error('[window.onerror] Global error caught:', {
+        message, source, line: lineno, column: colno, error
+      });
+
+      // The book demo collects the message and ships it elsewhere via
+      // fetch / XMLHttpRequest. Example (commented so it doesn't 404):
+      //
+      // fetch('https://your-endpoint.example.com/log', {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify({ message, source, lineno, colno, when: Date.now() })
+      // });
+
+      return false; // false keeps the browser's default logging too
+    };
+
+    // Modern equivalent.
+    window.addEventListener('error', e => {
+      console.error('[addEventListener("error")] Global error caught:', e.message);
+    });
+
+    // Catch promise rejections nobody handled.
+    window.addEventListener('unhandledrejection', e => {
+      console.error('[unhandledrejection] Caught:', e.reason);
+    });
+
+    /* ============================================================
+       STEP 3 + 4 — CALCULATOR with try/catch/finally, throw,
+       and a custom error type.
+       ============================================================ */
+
+    // Step 4: custom error extending the built-in Error.
+    class CalculatorError extends Error {
+      constructor(message) {
+        super(message);
+        this.name = 'CalculatorError';
+      }
+    }
+
     let form = document.querySelector('form');
     form.addEventListener('submit', e => {
       e.preventDefault();
@@ -95,13 +156,133 @@
       let firstNum = document.querySelector('#first-num').value;
       let secondNum = document.querySelector('#second-num').value;
       let operator = document.querySelector('#operator').value;
-      output.innerHTML = eval(`${firstNum} ${operator} ${secondNum}`);
+
+      // Step 3: wrap the risky work in try/catch/finally.
+      try {
+        // Step 4: validate input and THROW a custom error on bad data.
+        if (firstNum.trim() === '' || secondNum.trim() === '') {
+          throw new CalculatorError('Both number fields are required.');
+        }
+        if (isNaN(Number(firstNum)) || isNaN(Number(secondNum))) {
+          throw new CalculatorError('Both inputs must be valid numbers.');
+        }
+        if (operator === '/' && Number(secondNum) === 0) {
+          throw new CalculatorError('Cannot divide by zero.');
+        }
+
+        let result = eval(`${firstNum} ${operator} ${secondNum}`);
+        output.innerHTML = result;
+        console.log(`Result: ${firstNum} ${operator} ${secondNum} = ${result}`);
+      } catch (err) {
+        // Unlike Java, JS catch takes a single binding for any throwable.
+        output.innerHTML = `${err.name}: ${err.message}`;
+        console.error('Caught in catch block:', err);
+      } finally {
+        // Always runs — good place for cleanup / logging.
+        console.log('Calculation attempt finished (finally block).');
+      }
     });
+
+    /* ============================================================
+       STEP 2 — CONSOLE API DEMOS, wired to each button by order.
+       ============================================================ */
 
     let errorBtns = Array.from(document.querySelectorAll('#error-btns > button'));
 
-    // Start your code here
-    // You may move this JS to another file if you wish
+    // Sample data for table/dir/dirxml demos.
+    const sampleData = [
+      { id: 1, name: 'Ada Lovelace', role: 'Mathematician' },
+      { id: 2, name: 'Alan Turing', role: 'Computer Scientist' },
+      { id: 3, name: 'Grace Hopper', role: 'Rear Admiral' }
+    ];
+
+    // 0 — Console Log
+    errorBtns[0].addEventListener('click', () => {
+      console.log('Console Log: hello from Lab 9!');
+      console.log('%cStyled log', 'color: blue; font-weight: bold;');
+    });
+
+    // 1 — Console Error
+    errorBtns[1].addEventListener('click', () => {
+      console.error('Console Error: this is an error-styled message.');
+    });
+
+    // 2 — Console Count (increments a named counter each click)
+    errorBtns[2].addEventListener('click', () => {
+      console.count('Console Count button clicks');
+    });
+
+    // 3 — Console Warn
+    errorBtns[3].addEventListener('click', () => {
+      console.warn('Console Warn: this is a warning-styled message.');
+    });
+
+    // 4 — Console Assert (only logs when the assertion is FALSE)
+    errorBtns[4].addEventListener('click', () => {
+      console.assert(1 === 2, 'Console Assert: 1 === 2 is false, so this prints.');
+      console.assert(1 === 1, 'You will never see this message.');
+    });
+
+    // 5 — Console Clear
+    errorBtns[5].addEventListener('click', () => {
+      console.clear();
+    });
+
+    // 6 — Console Dir (interactive property listing of a DOM node)
+    errorBtns[6].addEventListener('click', () => {
+      console.dir(document.querySelector('#error-btns'));
+    });
+
+    // 7 — Console dirxml (HTML/XML tree of a node)
+    errorBtns[7].addEventListener('click', () => {
+      console.dirxml(document.querySelector('main'));
+    });
+
+    // 8 — Console Group Start (opens an indented group)
+    errorBtns[8].addEventListener('click', () => {
+      console.group('My Group');
+      console.log('This log is inside the group.');
+      console.log('So is this one.');
+    });
+
+    // 9 — Console Group End (closes the most recent group)
+    errorBtns[9].addEventListener('click', () => {
+      console.log('This log closes the group.');
+      console.groupEnd();
+    });
+
+    // 10 — Console Table
+    errorBtns[10].addEventListener('click', () => {
+      console.table(sampleData);
+    });
+
+    // 11 — Start Timer
+    errorBtns[11].addEventListener('click', () => {
+      console.time('Stopwatch');
+      console.log('Timer "Stopwatch" started.');
+    });
+
+    // 12 — End Timer
+    errorBtns[12].addEventListener('click', () => {
+      console.timeEnd('Stopwatch'); // prints elapsed time since Start Timer
+    });
+
+    // 13 — Console Trace (prints the call stack)
+    errorBtns[13].addEventListener('click', () => {
+      function inner() { console.trace('Console Trace from inner()'); }
+      function outer() { inner(); }
+      outer();
+    });
+
+    // 14 — Trigger a Global Error (Step 5)
+    // Calls an undefined function so the error escapes to global scope
+    // and is caught by window.onerror / addEventListener('error').
+    errorBtns[14].addEventListener('click', () => {
+      thisFunctionDoesNotExist();
+    });
+
+    console.log('%cLab 9 loaded — open DevTools and start clicking.',
+      'color: green; font-weight: bold;');
   </script>
 </body>
 
