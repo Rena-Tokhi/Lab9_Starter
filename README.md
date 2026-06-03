@@ -1,6 +1,6 @@
 # Lab 9 - Starter
 
-**Published GitHub Pages URL:** 
+**Published GitHub Pages URL:**  https://rena-tokhi.github.io/Lab9_Starter/
 
 
 ## What this lab demonstrates
